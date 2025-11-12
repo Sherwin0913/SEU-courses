@@ -1,0 +1,1432 @@
+\documentclass[aspectratio=169,12pt]{beamer}
+\usepackage{ctex, hyperref}
+\usepackage[T1]{fontenc}
+
+% other packages
+\usepackage{latexsym,amsmath,xcolor,multicol,booktabs,calligra,graphicx,pstricks,listings,stackengine}
+\usepackage{tikz}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{Tsinghua}
+
+% 主题设置
+\usetheme{Madrid}
+
+% 在每个section开始时显示目录，突出显示当前section
+\AtBeginSection[]
+{
+  \begin{frame}{目录}
+    \small
+    \begin{columns}
+    \column{0.5\textwidth}
+    \tableofcontents[sections={1-5},currentsection,hideothersubsections]
+    
+    \column{0.5\textwidth}
+    \tableofcontents[sections={6-11},currentsection,hideothersubsections]
+    \end{columns}
+  \end{frame}
+}
+
+% 标题页信息
+\title{深度强化学习的挑战}
+\subtitle{第七章}
+\author{沈梓倩、赵玉俊、王骁越、项学文、韩成瑞}
+\institute[]{东南大学数学学院}
+\date{2025年11月10日}
+
+% SEU 配色方案
+\definecolor{seuyellow}{RGB}{251,199,7}
+\definecolor{seugreen}{RGB}{82,113,88}
+\usecolortheme[named=seugreen]{structure}
+
+% 修改列表项颜色，避免与章节序号混淆
+\definecolor{lightblue}{RGB}{70,130,180}  % 淡蓝色
+\setbeamercolor{item}{fg=lightblue}
+\setbeamercolor{subitem}{fg=lightblue}
+\setbeamercolor{subsubitem}{fg=lightblue}
+\setbeamertemplate{itemize items}[circle]
+
+% 自定义颜色
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+\definecolor{halfgray}{gray}{0.55}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\bfseries\color{deepblue},
+    emphstyle=\ttfamily\color{deepred},
+    stringstyle=\color{deepgreen},
+    numbers=left,
+    numberstyle=\small\color{halfgray},
+    rulesepcolor=\color{red!20!green!20!blue!20},
+    frame=shadowbox,
+}
+
+\begin{document}
+
+\kaishu
+% 标题页
+\begin{frame}
+\titlepage
+\begin{figure}[htpb]
+    \begin{center}
+        \includegraphics[width=0.15\linewidth]{pic/seu.pdf}
+    \end{center}
+\end{figure}
+\end{frame}
+
+% 目录
+\begin{frame}{目录}
+\small
+\begin{columns}
+\column{0.5\textwidth}
+\tableofcontents[sections={1-5}]
+
+\column{0.5\textwidth}
+\tableofcontents[sections={6-11}]
+\end{columns}
+\vspace{0.3cm}
+\begin{block}{汇报顺序}
+沈梓倩：1 引言；2 样本效率\\
+赵玉俊：3 训练稳定性；4 灾难性遗忘\\
+王骁越：5 探索问题；6 元学习与表示学习\\
+项学文：7 多智能体强化学习；8 模拟到现实\\
+韩成瑞：9 大规模强化学习；10 其他挑战；11 总结与展望
+\end{block}
+\end{frame}
+
+% 第一部分：概述
+\section{引言}
+\begin{frame}{深度强化学习面临的主要挑战}
+\begin{columns}
+\column{0.5\textwidth}≈
+\textbf{核心挑战：}
+\begin{enumerate}
+\item 样本效率问题
+\item 训练稳定性
+\item 灾难性遗忘
+\item 探索相关问题
+\item 元学习与表示学习
+\item 多智能体强化学习
+\item 模拟到现实迁移
+\item 大规模强化学习
+\end{enumerate}
+
+\column{0.5\textwidth}
+\begin{alertblock}{本章目标}
+\begin{itemize}
+\item 识别现有方法的缺陷
+\item 了解可能的解决方案
+\item 探索未来研究方向
+\end{itemize}
+\end{alertblock}
+\end{columns}
+\end{frame}
+
+% 第二部分：样本效率
+\section{样本效率}
+\begin{frame}{样本效率问题}
+\begin{block}{定义}
+样本效率（Sample Efficiency）指算法从有限数据中学习有效策略的能力。样本高效算法能够用更少的环境交互次数达到相同或更好的性能。
+\end{block}
+
+\vspace{0.3cm}
+\textbf{问题的严重性：}
+\begin{itemize}
+\item \textcolor{red}{人类学习者}：Pong游戏约15分钟（$\sim$1000帧）即可掌握
+\item \textcolor{blue}{DQN算法}：需要约2亿帧样本才能达到人类水平
+\item 差距：约\textbf{20万倍}的样本效率鸿沟
+\end{itemize}
+
+\vspace{0.3cm}
+\begin{exampleblock}{实际意义}
+\begin{itemize}
+\item 现实世界数据采集成本高（时间、能源、硬件磨损）
+\item 安全关键应用中失败代价巨大（自动驾驶、医疗）
+\item 限制了强化学习在真实场景的部署
+\end{itemize}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{提高样本效率的方法（1/3）}
+\small
+\textbf{1. 从专家示范中学习（Imitation Learning）}
+\begin{itemize}
+\item \textbf{行为克隆}：监督学习专家轨迹
+\item \textbf{逆强化学习（IRL）}：推断专家奖励函数
+\item \textbf{GAIL}：生成对抗模仿学习
+\item 应用：AlphaGo预训练、机器人操作
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{2. 基于模型的强化学习（Model-Based RL）}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{核心思想：}
+\begin{itemize}
+\item 学习环境动力学模型
+\item 利用模型规划和想象
+\item 减少真实环境交互
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{模型组成：}
+\begin{itemize}
+\item 状态转移：$s_{t+1} = f(s_t, a_t)$
+\item 奖励函数：$r_t = r(s_t, a_t)$
+\end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}{提高样本效率的方法（2/3）}
+\textbf{案例：PILCO算法}~\cite{deisenroth2011pilco}
+
+\begin{itemize}
+\item 使用\textbf{高斯过程（Gaussian Process）}建模动力学
+\item 通过\textbf{矩匹配（Moment Matching）}进行策略优化
+\item Cart-Double-Pendulum任务：\textcolor{red}{仅需20-30次试验}
+\item 对比：无模型方法（如DQN）需要\textcolor{blue}{数千至数万次试验}
+\end{itemize}
+
+\vspace{0.5cm}
+\begin{alertblock}{局限性与挑战}
+\begin{itemize}
+\item \textbf{模型偏差（Model Bias）}：学到的模型不准确可能误导策略
+\item \textbf{复合误差（Compounding Error）}：多步预测误差累积
+\item \textbf{计算复杂度}：精确建模高维系统困难
+\item \textbf{可扩展性}：难以应用于复杂视觉输入任务
+\end{itemize}
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{提高样本效率的方法（3/3）}
+\textbf{3. 改进算法本身}
+
+\begin{table}
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{问题} & \textbf{解决方案} \\
+\midrule
+策略梯度方差大 & Actor-Critic方法 \\
+小规模→大规模 & DQN（深度神经网络） \\
+Q值过估计 & Double DQN \\
+探索不足 & Noisy DQN, SAC \\
+离散→连续 & DDPG \\
+DDPG不稳定 & TD3（孪生延迟DDPG） \\
+策略安全更新 & TRPO（信赖域方法） \\
+TRPO计算慢 & PPO（一阶近似） \\
+二阶优化加速 & ACKTR \\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{frame}
+
+\begin{frame}{稀疏奖励问题}
+\begin{columns}
+\column{0.55\textwidth}
+\textbf{问题描述：}
+\begin{itemize}
+\item 环境仅在任务完成时给予奖励
+\item 中间过程奖励值为0或常数
+\item 缺乏有效的学习信号引导探索
+\item 信用分配（Credit Assignment）困难
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{解决方案：}
+\begin{itemize}
+\item \textcolor{seugreen}{\textbf{后见之明经验回放（HER）}}
+\item \textcolor{seugreen}{\textbf{分层强化学习（HRL）}}
+\item \textcolor{seugreen}{\textbf{内在动机（Intrinsic Motivation）}}
+\item \textcolor{seugreen}{\textbf{好奇心驱动（Curiosity-Driven）}}
+\item \textcolor{seugreen}{\textbf{课程学习（Curriculum Learning）}}
+\end{itemize}
+
+\column{0.45\textwidth}
+\begin{tikzpicture}[scale=0.85]
+% 绘制奖励信号图
+\draw[->] (0,0) -- (5,0) node[right] {\small 时间步};
+\draw[->] (0,0) -- (0,3.5) node[above] {\small 奖励};
+\draw[thick,blue,line width=1.5pt] (0,0) -- (4,0);
+\draw[thick,red,line width=1.5pt] (4,0) -- (4,3);
+\node at (4,-0.4) {\small 成功};
+\node[blue] at (2,0.4) {\small 稀疏区域};
+\node[red] at (4.5,1.5) {\small $+R$};
+% 添加虚线表示困难
+\draw[dashed,gray] (0,0) -- (4,0);
+\fill[blue!20,opacity=0.3] (0,0) rectangle (4,0.3);
+\end{tikzpicture}
+
+\vspace{0.2cm}
+\begin{exampleblock}{典型场景}
+机器人抓取、迷宫导航、游戏关卡通关
+\end{exampleblock}
+\end{columns}
+\end{frame}
+
+% 第三部分：训练稳定性
+\section{训练稳定性}
+\begin{frame}{学习稳定性问题}
+\small
+\begin{block}{不稳定的表现}
+\begin{itemize}
+\item \textbf{时间维度}：学习曲线剧烈震荡、非单调性、突然崩溃
+\item \textbf{横向比较}：不同随机种子结果差异巨大
+\end{itemize}
+\end{block}
+
+\vspace{0.3cm}
+\textbf{造成不稳定的根本原因：}
+\begin{itemize}
+\item 1. \textbf{非平稳性}：策略改变导致数据分布持续变化
+\item 2. \textbf{违反i.i.d.假设}：序列数据高度相关
+\item 3. \textbf{自举偏差}：用估计值更新估计值
+\item 4. \textbf{高方差梯度}：策略梯度估计器噪声大
+\item 5. \textbf{脆弱性}：对超参数、初始化极度敏感
+\end{itemize}
+\end{frame}
+
+\begin{frame}{学习稳定性：核心挑战}
+\begin{alertblock}{核心挑战}
+目标函数、数据分布、优化过程三者相互耦合、动态变化
+\end{alertblock}
+
+\vspace{0.5cm}
+\begin{center}
+\begin{tikzpicture}[scale=1.2]
+% 绘制三角关系图
+\node[rectangle, draw=seugreen, fill=seuyellow!20, line width=1.5pt, minimum width=2.5cm, minimum height=1cm, font=\small\bfseries] at (0,3) {目标函数};
+\node[rectangle, draw=seugreen, fill=seuyellow!20, line width=1.5pt, minimum width=2.5cm, minimum height=1cm, font=\small\bfseries] at (-2.5,0) {数据分布};
+\node[rectangle, draw=seugreen, fill=seuyellow!20, line width=1.5pt, minimum width=2.5cm, minimum height=1cm, font=\small\bfseries] at (2.5,0) {优化过程};
+
+\draw[<->,seugreen,line width=2pt] (0,2.5) -- (-1.8,0.8);
+\draw[<->,seugreen,line width=2pt] (0,2.5) -- (1.8,0.8);
+\draw[<->,seugreen,line width=2pt] (-1.3,0.2) -- (1.3,0.2);
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.3cm}
+\begin{exampleblock}{后果}
+训练过程中的动态反馈循环导致性能不可预测
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{VIME实验中的不稳定性}
+\begin{figure}
+\centering
+\includegraphics[width=0.75\textwidth]{photo/图7.1.png}
+\caption{VIME实验学习曲线（Houthooft et al., 2016）}
+\end{figure}
+
+\vspace{0.1cm}
+\small
+\begin{itemize}
+\item \textbf{MountainCar}: TRPO曲线覆盖整个奖励范围[0,1]
+\item \textbf{HalfCheetah}: TRPO+VIME同样不稳定
+\item TRPO已是相对稳定算法（二阶优化+信赖域）
+\end{itemize}
+\end{frame}
+
+\begin{frame}{影响稳定性的因素~\cite{henderson2018deep}}
+\small
+\textbf{Henderson等人的研究结论：}
+
+\begin{itemize}
+\item 1. \textbf{网络结构}：对TRPO和DDPG结果有显著影响
+\item 2. \textbf{激活函数}：ReLU或Leaky ReLU表现最好
+\item 3. \textbf{奖励缩放}：效果对不同环境不一致
+\item 4. \textbf{随机种子}：5个种子可能不足
+\end{itemize}
+
+\vspace{0.3cm}
+\begin{alertblock}{重要提示}
+使用不同随机种子获得平均结果非常重要
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{提高稳定性的方法}
+\begin{table}
+\small
+\begin{tabular}{lp{7cm}}
+\toprule
+\textbf{方法} & \textbf{改进措施} \\
+\midrule
+价值函数拟合 & 降低REINFORCE算法的方差 \\
+Actor-Critic & 结合Q-Learning和策略梯度 \\
+DQN & 目标网络+延迟更新+经验回放池 \\
+TD3 & 目标策略平滑正则化+双Critic \\
+TRPO & 二阶优化+信赖域限制 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.3cm}
+\begin{block}{挑战仍存}
+不稳定性、随机性和对超参数的敏感性仍是强化学习社区的巨大挑战
+\end{block}
+\end{frame}
+
+% 第四部分：灾难性遗忘
+\section{灾难性遗忘}
+\begin{frame}{灾难性遗忘问题}
+\begin{block}{定义}
+灾难性遗忘（Catastrophic Forgetting）~\cite{kirkpatrick2017overcoming}：神经网络在持续学习新任务时，对新数据的拟合导致已学知识的快速丢失，性能急剧下降。
+\end{block}
+
+\vspace{0.5cm}
+\textbf{在强化学习中的表现：}
+\begin{itemize}
+\item \textbf{策略退化}：学习新策略时忘记之前有效的行为模式
+\item \textbf{价值函数失真}：对已访问状态的价值估计变得不准确
+\item \textbf{多任务干扰}：多个任务之间的负迁移
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{为什么在RL中特别严重？}
+\begin{itemize}
+\item 强化学习本质上是\textbf{非平稳优化问题}
+\item 策略改变$\rightarrow$数据分布变化$\rightarrow$价值函数更新$\rightarrow$策略进一步改变
+\item 形成"追逐移动目标"的循环
+\end{itemize}
+\end{frame}
+
+\begin{frame}{解决灾难性遗忘的方法}
+\textbf{1. 约束策略更新（Constrained Policy Updates）}
+\begin{itemize}
+\item \textbf{TRPO}：KL散度约束保证策略渐进改进
+\item \textbf{PPO}：裁剪目标函数限制更新幅度
+\item 数学形式：$\max_\theta \mathbb{E}[\cdots] \quad \text{s.t.} \quad D_{KL}(\pi_{\theta_{old}}\|\pi_\theta) \leq \delta$
+\end{itemize}
+
+\vspace{0.5cm}
+\textbf{2. 经验回放机制（Experience Replay）}
+\begin{itemize}
+\item \textbf{经验回放池}：存储历史转移，打破时间相关性
+\item \textbf{优先经验回放（PER）}：重点回放高TD误差样本
+\item \textbf{后见之明经验回放（HER）}：稀疏奖励下的数据增强
+\end{itemize}
+
+\vspace{0.5cm}
+\textbf{3. 网络正则化技术}
+\begin{itemize}
+\item \textbf{弹性权重巩固（EWC）}：保护重要参数不被过度修改
+\item \textbf{渐进神经网络}：为新任务添加新模块，冻结旧参数
+\item \textbf{知识蒸馏}：用旧模型约束新模型的输出分布
+\end{itemize}
+\end{frame}
+
+% 第五部分：探索
+\section{探索问题}
+\begin{frame}{探索的挑战}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{探索困难的来源：}
+\begin{itemize}
+\item \textbf{稀疏奖励}：成功信号极少
+\item \textbf{欺骗性奖励}：局部最优陷阱
+\item \textbf{高维动作空间}：组合爆炸
+\item \textbf{长时间依赖}：延迟奖励归因
+\item \textbf{安全约束}：现实中探索风险
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{探索-利用困境（Exploration-Exploitation Dilemma）：}
+\begin{quote}
+\small
+如何在利用已知最优策略和探索未知区域之间取得平衡？
+\end{quote}
+
+\column{0.5\textwidth}
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{photo/图7.2.png}
+\caption{Montezuma's Revenge：探索极具挑战性的Atari游戏}
+\end{figure}
+
+\vspace{0.1cm}
+\begin{itemize}
+\item 24个房间的复杂迷宫
+\item 需要数十步精确操作序列
+\item 标准DQN几乎无法学习
+\end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}{大规模游戏的探索挑战}
+\textbf{游戏复杂度对比}~\cite{vinyals2019grandmaster}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.65\textwidth]{photo/表7.1.png}
+\caption{对比不同的游戏}
+\end{figure}
+
+\vspace{0.3cm}
+\begin{alertblock}{挑战}
+巨大的动作空间（$10^{26}$）与长控制序列
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{探索问题的解决方案}
+\small
+\textbf{1. 模仿学习（Imitation Learning）}
+\begin{itemize}
+\item 从专家演示中学习，快速接近可行策略空间
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{2. 内在动机（Intrinsic Motivation）}
+\begin{itemize}
+\item \textbf{好奇心驱动}：奖励预测误差$r_i = \|\hat{s}_{t+1} - s_{t+1}\|^2$
+\item \textbf{计数探索}：访问次数倒数作为探索奖励
+\item \textbf{信息增益}：最大化状态-动作信息量
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{3. 分层强化学习（Hierarchical RL）}
+\begin{itemize}
+\item 将复杂任务分解为子目标层次
+\item \textbf{Options框架}：学习可重用的技能
+\item \textbf{Feudal Networks}：管理者-工作者结构
+\end{itemize}
+\end{frame}
+
+\begin{frame}{新兴探索方法}
+\textbf{1. Go-Explore算法}
+\begin{itemize}
+\item \textbf{第一阶段}：在确定性环境中系统性探索，记录所有访问状态
+\item \textbf{第二阶段}：返回有价值的状态继续探索（"回到感兴趣状态"）
+\item \textbf{第三阶段}：鲁棒化训练，对环境随机性建立鲁棒策略
+\item 在Montezuma's Revenge上取得超人类表现
+\end{itemize}
+
+\vspace{0.5cm}
+\textbf{2. 基于种群的训练（Population-Based Training, PBT）}~\cite{vinyals2019grandmaster}
+\begin{itemize}
+\item DeepMind用于AlphaStar训练
+\item \textbf{多样性维持}：智能体集合形成联盟（League）
+\item \textbf{自我对弈}：不同策略之间相互竞争
+\item \textbf{在线进化}：动态调整超参数和网络结构
+\item 充分探索策略空间，避免陷入局部最优
+\end{itemize}
+\end{frame}
+
+\begin{frame}{现实世界探索的安全性}
+\begin{exampleblock}{问题示例：自动驾驶}
+\begin{itemize}
+\item 需要从失败情况学习
+\item 实际车辆无法采集车祸样本
+\item 不能使用随机动作探索（可能导致灾难）
+\end{itemize}
+\end{exampleblock}
+
+\vspace{0.3cm}
+\textbf{解决方案：模拟到现实转移（Sim-to-Real Transfer）}
+\begin{itemize}
+\item 1. 先在模拟中进行训练
+\item 2. 再将策略转移到现实中
+\item 3. 适用于：机器人操作、机器人手术等
+\end{itemize}
+\end{frame}
+
+% 第六部分：元学习和表示学习
+\section{元学习与表示学习}
+\begin{frame}{元学习与表示学习}
+\begin{block}{核心问题}
+如何让智能体利用多任务学习经验，实现快速适应新任务的能力？
+\end{block}
+
+\vspace{0.5cm}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{元学习（Meta-Learning）}
+\begin{itemize}
+\item "学会学习"（Learning to Learn）
+\item \textbf{内循环}：在具体任务上快速适应
+\item \textbf{外循环}：跨任务优化学习算法
+\item 目标：few-shot快速泛化
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{表示学习（Representation Learning）}
+\begin{itemize}
+\item 学习任务无关的通用特征
+\item 降低原始感知维度
+\item 提取语义层次信息
+\item 促进跨任务知识迁移
+\end{itemize}
+\end{columns}
+
+\vspace{0.3cm}
+\begin{exampleblock}{关键价值}
+减少每个新任务所需的样本量，实现终身学习（Lifelong Learning）
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{模型无关的元学习（MAML）}
+\small
+\textbf{MAML算法}~\cite{finn2017model}
+
+\begin{itemize}
+\item \textbf{核心思想}：寻找良好的参数初始化点$\theta_0$
+\item 从$\theta_0$出发，少量梯度步骤即可适应新任务
+\item \textbf{双层优化}：
+  \begin{itemize}
+  \item 内层：$\theta_i' = \theta - \alpha \nabla_\theta \mathcal{L}_{\mathcal{T}_i}(\theta)$
+  \item 外层：$\theta \leftarrow \theta - \beta \nabla_\theta \sum_i \mathcal{L}_{\mathcal{T}_i}(\theta_i')$
+  \end{itemize}
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{表示学习的前沿方向}
+\begin{itemize}
+\item \textbf{对比学习}：SimCLR、MoCo自监督方法
+\item \textbf{世界模型}：学习环境动力学隐表示
+\item \textbf{因果表示}：识别状态因果变量
+\end{itemize}
+\end{frame}
+
+\begin{frame}{元学习与表示学习：研究趋势}
+\begin{alertblock}{主流范式}
+预训练大模型+下游任务微调（Pre-training + Fine-tuning）
+\end{alertblock}
+
+\vspace{0.5cm}
+\textbf{代表性工作：}
+\begin{itemize}
+\item \textbf{计算机视觉}：自监督预训练（MoCo v3、MAE）
+\item \textbf{自然语言处理}：GPT系列、BERT系列
+\item \textbf{强化学习}：Decision Transformer、Gato（多任务智能体）
+\end{itemize}
+
+\vspace{0.5cm}
+\textbf{优势：}
+\begin{itemize}
+\item 利用大规模无标注数据学习通用表示
+\item 显著降低下游任务的样本需求
+\item 实现跨任务、跨领域的知识迁移
+\end{itemize}
+\end{frame}
+
+% 第七部分：多智能体强化学习
+\section{多智能体强化学习}
+\begin{frame}{多智能体强化学习（MARL）}
+\small
+\begin{block}{现实动机}
+\begin{itemize}
+\item 真实世界里，其他参与者往往与我们同时存在并相互影响：对抗、协作以及竞争—协作的混合互动随处可见。
+\item 其他智能体本身就构成了我们所处的动态环境，使得环境分布随时间变化、呈现非平稳特性。
+\item 为我们研究群体智能、策略共演化、对手建模与机制设计提供了系统化的工具，也让智能体在社会性交互中催生出“创新”。
+\end{itemize}
+\end{block}
+
+\vspace{0.3cm}
+\begin{block}{应用舞台}
+\begin{itemize}
+\item 围棋/星际争霸、交通编队、仓储调度
+\item 多机械臂协同抓取、无人系统编队
+\end{itemize}
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Dec-POMDP模型}
+\small
+\begin{itemize}
+\item 从建模角度看，MARL通常用马尔可夫博弈来刻画：存在全局状态，若干智能体各自选择动作，形成联合动作并驱动联合转移，每个个体获得自己的回报。
+\item 很多场景是部分可观测的，智能体只能基于局部观测做决策。
+\end{itemize}
+
+\vspace{0.3cm}
+\begin{block}{Decentralized Partially Observable Markov Decision Process}
+\textbf{定义：}Dec-POMDP是一个八元组 $\mathcal{M}=\langle N,\mathcal{S},\{\mathcal{A}_i\}_{i=1}^n,\{\mathcal{O}_i\}_{i=1}^n,P,O,R,\gamma\rangle$
+
+\begin{itemize}
+\item $N=\{1,\dots,n\}$：智能体集合
+\item $\mathcal{S}$：全局状态空间
+\item $\mathcal{A}_i$：智能体$i$的动作空间，联合动作 $\mathbf{a}=(a_1,\dots,a_n)\in\mathcal{A}=\prod_{i=1}^n\mathcal{A}_i$
+\item $\mathcal{O}_i$：智能体$i$的观测空间，联合观测 $\mathbf{o}=(o_1,\dots,o_n)\in\mathcal{O}=\prod_{i=1}^n\mathcal{O}_i$
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Dec-POMDP：转移、观测与回报}
+\small
+\textbf{转移函数：}
+\begin{equation*}
+P:\mathcal{S}\times\mathcal{A}\to\Delta(\mathcal{S}),\quad s_{t+1}\sim P(\cdot\mid s_t,\mathbf{a}_t)
+\end{equation*}
+
+\textbf{观测函数：}
+\begin{equation*}
+O:\mathcal{S}\times\mathcal{A}\to\Delta(\mathcal{O}),\quad \mathbf{o}_{t+1}\sim O(\cdot\mid s_{t+1},\mathbf{a}_t)
+\end{equation*}
+每个智能体$i$获得局部观测 $o_{i,t+1}$，通常 $O_i(o_i\mid s,\mathbf{a})$ 表示智能体$i$的观测分布。
+
+\vspace{0.2cm}
+\textbf{回报函数：}
+\begin{equation*}
+R:\mathcal{S}\times\mathcal{A}\to\mathbb{R},\quad r_t=R(s_t,\mathbf{a}_t)
+\end{equation*}
+协作场景下所有智能体共享同一回报；一般场景下可定义 $R_i(s,\mathbf{a})$。
+
+\vspace{0.2cm}
+\textbf{初始分布：} $s_0\sim\rho_0(\cdot)$，折扣因子 $\gamma\in[0,1)$
+\end{frame}
+
+\begin{frame}{Dec-POMDP：策略与目标}
+\small
+\textbf{策略形式：}
+\begin{itemize}
+\item 智能体$i$的私有历史：$h_{i,t}=(o_{i,0},a_{i,0},o_{i,1},a_{i,1},\dots,o_{i,t})$
+\item 策略：$\pi_i:\mathcal{H}_i\to\Delta(\mathcal{A}_i)$，其中 $\mathcal{H}_i$ 为历史空间
+\item 联合策略：$\boldsymbol{\pi}=(\pi_1,\dots,\pi_n)$
+\item 动作采样：$a_{i,t}\sim\pi_i(\cdot\mid h_{i,t})$
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{轨迹分布：}
+\begin{equation*}
+p_{\boldsymbol{\pi}}(\tau)=\rho_0(s_0)\prod_{t=0}^{T-1}\left[\prod_{i=1}^n\pi_i(a_{i,t}\mid h_{i,t})\right]P(s_{t+1}\mid s_t,\mathbf{a}_t)O(\mathbf{o}_{t+1}\mid s_{t+1},\mathbf{a}_t)
+\end{equation*}
+
+\vspace{0.2cm}
+\textbf{优化目标：}
+\begin{equation*}
+J(\boldsymbol{\pi})=\mathbb{E}_{\tau\sim p_{\boldsymbol{\pi}}}\left[\sum_{t=0}^{T-1}\gamma^t R(s_t,\mathbf{a}_t)\right]
+\end{equation*}
+\end{frame}
+
+\begin{frame}{Dec-POMDP：信念状态与值函数}
+\small
+\textbf{信念状态（Belief State）：}
+\begin{itemize}
+\item 智能体$i$维护关于全局状态的信念：$b_{i,t}(s)={P}(s_t=s\mid h_{i,t})$
+\item 信念更新（Bayes规则）：
+\begin{equation*}
+b_{i,t}(s)\propto O_i(o_{i,t}\mid s,\mathbf{a}_{t-1})\sum_{s'}P(s\mid s',\mathbf{a}_{t-1})b_{i,t-1}(s')
+\end{equation*}
+\item 基于信念的策略：$\pi_i(a_i\mid b_{i,t})$ 或 $\pi_i(a_i\mid h_{i,t})$
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{值函数：}
+\begin{itemize}
+\item 状态值函数：$V^{\boldsymbol{\pi}}(s)=\mathbb{E}_{\boldsymbol{\pi}}[\sum_{t=0}^{\infty}\gamma^t R(s_t,\mathbf{a}_t)\mid s_0=s]$
+\item 状态-动作值函数：$Q^{\boldsymbol{\pi}}(s,\mathbf{a})=R(s,\mathbf{a})+\gamma\sum_{s'}P(s'\mid s,\mathbf{a})V^{\boldsymbol{\pi}}(s')$
+\item 信念值函数：$V^{\boldsymbol{\pi}}(b)=\sum_s b(s)V^{\boldsymbol{\pi}}(s)$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{CTDE范式：集中训练、分散执行}
+\small
+\begin{itemize}
+\item \textbf{训练期（集中）}：允许访问 $s_t$ 与 $\mathbf{a}_t$，使用中心化评论器/联合价值
+\item \textbf{部署期（分散）}：个体策略 $\pi_i(a_i\mid o_{i,t})$ 独立执行，满足现实约束
+\item 代表方法：\textbf{VDN/QMIX/QPLEX}（值分解），\textbf{MADDPG/COMA/MAPPO}（策略梯度）
+\end{itemize}
+
+\vspace{0.15cm}
+\begin{exampleblock}{收益}
+缓解非平稳与信用分配，提高稳定性与可扩展性
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{自我博弈与策略族：Self-Play / PSRO}
+\small
+\begin{itemize}
+\item \textbf{Self-Play/FSP/PFSP}：动态选择对手，控制训练难度
+\item \textbf{PSRO}：在策略集合层面近似纳什混合，持续寻找最优回应
+\item \textbf{联盟/种群训练（PBT/League）}：维持多样化策略生态与稳定梯度
+\end{itemize}
+
+\vspace{0.15cm}
+\begin{exampleblock}{案例}
+AlphaStar 采用 PFSP+PBT 的联盟训练，面向“在多样对手前保持优势”的\textbf{群体能力}
+\end{exampleblock}
+\end{frame}
+
+
+\begin{frame}{AlphaStar训练机制}
+  \begin{figure}
+  \centering
+  \includegraphics[width=0.75\textwidth]{photo/图7.3.png}
+  \caption{AlphaStar的训练机制：每个小方块表示联盟中的一个智能体}
+  \end{figure}
+  
+  \begin{itemize}
+  \item 联盟中的每个智能体用不同颜色方块表示
+  \item 不同智能体探索不同策略区域
+  \item 基于种群的训练（PBT）保证策略空间充分探索
+  \end{itemize}
+  \end{frame}
+
+
+
+
+
+
+\begin{frame}{独立强化学习与价值分解}
+\small
+\begin{exampleblock}{独立强化学习}
+独立DQN、独立PPO（IPPO）把其他智能体当作环境的一部分来学，简单好用、易扩展，但容易受到非平稳性的影响，是很好的起点，却往往需要进一步的稳定化设计。
+\end{exampleblock}
+
+\vspace{0.3cm}
+\begin{exampleblock}{价值分解}
+\begin{itemize}
+\item \textbf{VDN}：把联合$Q$近似为个体$Q$的可加组合，即 $Q_{tot}=\sum_i Q_i$
+\item \textbf{QMIX}：通过单调性约束实现更灵活的可分解
+\item \textbf{QTRAN、QPLEX}：进一步放宽或学习化分解结构
+\item \textbf{Qatten}：带注意力的可学习分解结构
+\end{itemize}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{策略梯度家族（CTDE）}
+\small
+\begin{exampleblock}{策略梯度方法}
+\textbf{MADDPG（Multi-Agent Deep Deterministic Policy Gradient）}：
+使用中心化评论器和去中心化策略兼顾稳定性与可部署性。训练时，每个智能体的评论器可以访问全局状态和所有智能体的动作，从而获得更准确的Q值估计；执行时，每个智能体仅基于自身局部观测独立决策，满足实际部署需求。这种方法有效缓解了多智能体环境中的非平稳性问题。
+
+\vspace{0.2cm}
+\textbf{COMA（Counterfactual Multi-Agent Policy Gradients）}：
+通过反事实优势刻画"去掉某个体贡献后"的增量收益，缓解信用分配难题。COMA为每个智能体计算反事实基线，即假设该智能体采取默认动作时的期望回报，从而准确评估个体动作的边际贡献。这种方法在协作任务中能够有效区分每个智能体的实际贡献。
+
+\vspace{0.2cm}
+\textbf{MAPPO、HATRPO、FACMAC}：
+在多智能体设定下改造单体的稳定算法，使之更易调、更抗非平稳。MAPPO将PPO扩展到多智能体场景，通过中心化价值函数和去中心化策略实现稳定训练；HATRPO引入信任域方法保证策略更新的安全性；FACMAC结合了actor-critic框架和值分解思想，在连续动作空间中表现优异。
+\end{exampleblock}
+\end{frame}
+
+
+
+
+
+\begin{frame}{MARL的核心挑战}
+\small
+\begin{alertblock}{MARL的核心挑战}
+\textbf{1、非平稳性}：队友与对手都在同时学习，经验分布持续漂移。解决思路包括CTDE架构、使用目标网络或阶段性冻结对手、显式对手建模与种群混合对手采样，以及分布鲁棒或最坏情况优化。
+
+\vspace{0.2cm}
+\textbf{2、信用分配}：个体贡献难以从全局回报中分离。反事实优势（如COMA）、差分回报、价值分解（QMIX/QPLEX等）以及可学习的分配权重（Qatten）是常用手段。
+
+\vspace{0.2cm}
+\textbf{3、探索与可扩展性}：联合动作空间指数级爆炸。层级控制、目标条件化探索、内在奖励与多样性驱动、以及分层规划都能改善样本效率与收敛质量。
+
+\vspace{0.2cm}
+\textbf{4、强局部可观测与通信代价}：需要在带宽、时延和鲁棒性之间折中，采用可学习通信协议、注意力选择通道与事件触发的稀疏通信能减少冗余而保持关键协调。
+
+\end{alertblock}
+\end{frame}
+
+
+\begin{frame}{案例与未来展望}
+  \small
+  \begin{exampleblock}{AlphaStar}
+  
+
+    \begin{itemize}
+    \item AlphaStar面临策略空间巨大、对手多样且环境先天非平稳的挑战，通过联盟训练维持策略多样性，用PFSP控制对手难度与训练梯度质量，并以混合策略减少过拟合单一路径，最终达到职业水平。
+    \item 在其他环境里，如协作编队与猎捕任务（MPE/SMAC），价值分解与反事实优势在信用分配与多体协同上取得了系统性收益，使得智能体能够更好地协作与对抗。
+
+    \end{itemize}
+  \end{exampleblock}
+  
+  
+  \vspace{0.2cm}
+  \begin{alertblock}{从“应试者”到“创新者”}
+  多智能体的\textbf{社会性交互}提供通向“创新”的路径：智能体在对抗与协作中相互推动，既把对手当作环境的一部分，也把自身的进步变为他人的新挑战。MARL 将这种\textbf{共演}纳入学习循环，结合博弈论与深度强化学习，正在复杂、动态、非平稳的真实问题上展现强大潜力。
+  \end{alertblock}
+  \end{frame}
+  
+
+
+
+
+
+
+% 第八部分：模拟到现实
+\section{模拟到现实}
+\begin{frame}{为什么需要模拟到现实（Sim-to-Real）}
+\small
+\begin{block}{现实任务与挑战}
+\begin{itemize}
+\item 深度强化学习在大规模模拟中已达或超越人类（如围棋），但现实任务仍具挑战。
+\item 现实应用：机器人控制、自动驾驶、无人机、工业控制等，\textbf{安全性与准确性}要求极高。
+\item 强化学习的探索在现实中代价大且有风险；工业仍大量依赖传统控制。
+\item 追求：用“聪明的智能体”操控物理系统，这一方向正被学术界与工业界积极推进。
+\end{itemize}
+\end{block}
+
+\vspace{0.25cm}
+\begin{alertblock}{动机}
+模拟训练成本低、速度快、可并行且安全；直接在现实训练通常\textbf{效率低、成本高且存在安全隐患}，因此需要“先模拟、再迁移”。
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{现实尝试与Sim-to-Real总览}
+\small
+\begin{exampleblock}{直接在现实训练的代表}
+\begin{itemize}
+\item \textbf{Guided Policy Search（GPS）}：用学习到的线性动态模型做轨迹优化，\textbf{以较少交互}学复杂技能（Levine et al., 2013；2018 并行化）。
+\item \textbf{QT-Opt 抓取}：7 台真实机器人分布式训练，约\textbf{4 个月/800 小时}采样，展示了现实端到端学习的可行性与成本（Kalashnikov et al., 2018）。
+\end{itemize}
+\end{exampleblock}
+
+\vspace{0.2cm}
+\begin{block}{Sim-to-Real 方案与现实鸿沟}
+\begin{itemize}
+\item \textbf{Sim-to-Real}：先在高效模拟中学习，再部署到现实（如 Akkaya et al., 2019；Andrychowicz et al., 2018）。
+\item \textbf{现实鸿沟（Reality Gap）}：模拟与现实在动力学、感知、时序与噪声等方面存在系统差异，导致\textbf{性能退化、失效或安全风险}。
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{现实鸿沟的主要来源}
+\small
+\begin{columns}
+\column{0.5\textwidth}
+\begin{block}{1. 动力学与执行}
+\begin{itemize}
+\item 摩擦/阻尼/弹性参数不准，接触与碰撞建模偏差
+\item 执行器非线性、饱和、死区与延迟
+\end{itemize}
+\end{block}
+
+\vspace{0.2cm}
+\begin{block}{2. 感知与时序}
+\begin{itemize}
+\item 传感器噪声、光照/遮挡、标定误差
+\item 观测构建/推理/通信/执行链路的\textbf{累计延迟}
+\end{itemize}
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{3. 环境与不确定性}
+\begin{itemize}
+\item 未建模扰动、几何/材质变化、长尾极端场景
+\item 任务/安全约束差异，现实操作规程限制
+\end{itemize}
+\end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}{现实鸿沟：时间延迟导致的MDP差异}
+\small
+\begin{columns}
+\column{0.4\textwidth}
+\begin{block}{图5}
+\begin{itemize}
+\item 模拟中默认“零延迟”：状态采集、策略推理、动作执行同一时间步完成。
+\item 现实中存在\textbf{感知/推理/执行}链路延迟，导致观测滞后与动作迟到。
+\item 等效为带总延迟 $\delta$ 的闭环：实际策略更像 $\pi(A_t\mid O_{t-\delta})$。
+\item 同一控制信号会出现相位滞后与性能退化，是“现实鸿沟”的重要来源。
+\end{itemize}
+\end{block}
+
+\column{0.58\textwidth}
+\begin{figure}
+\centering
+\includegraphics[width=0.9\textwidth]{photo/图7.4.png}
+\caption{时间延迟导致的MDP差异}
+\end{figure}
+\end{columns}
+\end{frame}
+
+\begin{frame}{现实鸿沟：机器人控制轨迹差异}
+\small
+\begin{columns}
+\column{0.58\textwidth}
+\begin{figure}
+\centering
+\includegraphics[width=0.9\textwidth]{photo/图7.5.png}
+\caption{机器人控制中的轨迹差异}
+\end{figure}
+
+\column{0.4\textwidth}
+\begin{block}{图6}
+\begin{itemize}
+\item 展示\textbf{参考信号}（控制命令）、\textbf{模拟轨迹}与\textbf{现实轨迹}的差异。
+\item 延迟、惯性与动力学不准使得两者均偏离参考；模拟与现实的偏差即\textbf{现实鸿沟}。
+\item \textbf{系统识别（SI）}：估计动力学参数以缩小差异，可用于策略或模拟器。
+\item \textbf{GFM}：向模拟器注入额外力校正，使模拟轨迹更贴近现实；但\textbf{鸿沟仍可能残留}。
+\end{itemize}
+\end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}{现实鸿沟：轨迹分析}
+\small
+\begin{columns}
+\column{0.5\textwidth}
+\begin{figure}
+\centering
+\includegraphics[width=0.9\textwidth]{photo/图7.6.png}
+\caption{物体位置的时间延迟}
+\end{figure}
+
+\column{0.48\textwidth}
+\begin{block}{图7}
+\begin{itemize}
+\item 视觉定位/追踪需要时间，产生\textbf{观测构建延迟}，现实轨迹相对模拟出现\textbf{时间间隙}。
+\item 决策基于滞后观测 $O_{t-1}$：现实策略近似 $\pi(A_t\mid O_{t-\delta})$ 而非 $\pi(A_t\mid S_t)$。
+\item 可能的对策：在模拟器注入并随机化延迟；实时RL与“\textbf{边运动边思考}”提升连续时间下的平滑与稳定。
+\end{itemize}
+\end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}{现实鸿沟：策略形式差异}
+\begin{block}{策略形式差异}
+\textbf{模拟}：$\pi(A_t|S_t)$ \quad \textbf{现实}：$\pi(A_t|O_{t-\delta})$
+\end{block}
+
+\vspace{0.5cm}
+
+\begin{itemize}
+\item 模拟器中：策略基于当前精确状态 $S_t$
+\item 现实世界：策略基于延迟观测 $O_{t-\delta}$
+\item 时间延迟 $\delta$ 导致控制性能下降
+\item 需要考虑传感器延迟和执行延迟
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Sim-to-Real：问题与方法分类}
+\small
+\begin{alertblock}{核心问题}
+在模拟中训练得到的策略，因\textbf{现实鸿沟}（模拟与现实的系统差异）\textbf{无法稳定用于现实}，导致性能退化甚至失效。
+\end{alertblock}
+
+\vspace{0.2cm}
+\begin{block}{两大类方法}
+\textbf{1) 零样本（Zero-Shot）}与\textbf{2) 自适应学习（Domain Adaptation）}。
+\begin{itemize}
+\item \textbf{域自适应视角}：源域（模拟）$\rightarrow$ 目标域（现实）；假设跨域存在可共享特征，需高效利用\textbf{少量或零}现实数据。
+\item \textbf{代表方向（自适应）}：元学习（Arndt'19; Nagabandi'18）、残差策略（Johannink'19; Silver'18b）、渐进网络（Rusu'16a,b）。
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Sim-to-Real}
+\vspace{0.15cm}
+\begin{exampleblock}{零样本：域随机化（Domain Randomization）}
+将源—目标差异视为\textbf{源域中的随机性}，学到对多种扰动\textbf{鲁棒的通用策略}：
+\begin{itemize}
+\item \textbf{动力学随机化}（Peng'18）：随机化质量、摩擦、阻尼、力矩/速度噪声等。
+\item \textbf{视觉随机化}（Sadeghi'16; Tobin'17）：随机纹理、光照、相机、物体布局等，支持纯视觉策略零样本落地。
+\end{itemize}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{Sim-to-Real}
+\small
+\begin{exampleblock}{前提与动机}
+现实鸿沟\textbf{依赖具体任务}：可能由\textbf{动力学参数/过程}定义差异引起，单纯随机化有时不足，需要\textbf{识别+条件化策略+校准}的组合。
+\end{exampleblock}
+
+\vspace{0.15cm}
+\begin{exampleblock}{系统识别与动力学敏感策略}
+\begin{itemize}
+\item \textbf{系统识别（SI）}：用少量真实轨迹估计质量、惯性、摩擦、关节刚度、执行器时延等参数；更新\textbf{模拟器}或\textbf{策略上下文}（Yu'17; Zhou'19）。
+\item \textbf{Dynamics-Aware 策略}：学习以\textbf{系统特征}为条件的策略 $\pi(a\mid o,\,c)$，其中 $c$ 由 SI 或\textbf{轨迹编码器}（RNN/Transformer）提取；部署时可\textbf{few-shot 自适应}更新 $c$，或与\textbf{残差策略}叠加做小步校正。
+\item \textbf{GFM 力校正}：在仿真中添加校正力 $f_{corr}(s,a;\theta)$ 以最小化模拟—现实轨迹差异（Jeong'19b），与 SI 协同进一步缩小鸿沟。
+\end{itemize}
+\end{exampleblock}
+\end{frame}
+
+
+\begin{frame}{Sim-to-Real}
+\vspace{0.15cm}
+\begin{exampleblock}{跨域表征与结构迁移}
+\begin{itemize}
+\item \textbf{Sim-to-Sim（RCANs）}：\textbf{随机/现实}图像 $\to$ \textbf{标准型（canonical）}渲染域，感知模块只在标准域工作；训练可用无配对对抗/一致性约束，部署时输入现实图像、输出标准域特征（James'19）。
+\item \textbf{渐进网络（Progressive Nets）}：通过\textbf{冻结旧列+侧向连接}复用低层视觉/控制特征，再叠加新列适配新域/任务，避免灾难性遗忘；将模拟中学到的低级表征迁移到现实或新任务，\textbf{组合式}构建复杂技能（Rusu'16a,b）。
+\end{itemize}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{Sim-to-Real}
+\vspace{0.15cm}
+\begin{exampleblock}{意义}
+  当今的计算框架利用离散的基于二值运算的计算过程，因此在某种程度上，我们应当始终承认模拟和现实世界的差异。这是因为后者在时间和空间上是连续的（至少在经典物理系统中）。只要学习算法不足够高效而能够直接人脑一样应用于现实世界（或者即便可以实现），在模拟环境中得到一些预训练模型也总是有用的。如果模型在一定程度上有对现实环境的泛化能力就会更好，而这是模拟到现实迁移算法的意义。换句话说，模拟到现实迁移算法提供了始终考虑到在现实鸿沟下的学习模型方法论，而无关于模拟器本身有多精确。
+
+\end{exampleblock}
+\end{frame}
+
+% 第九部分：大规模强化学习
+\section{大规模强化学习}
+\begin{frame}{大规模强化学习的挑战}
+\small
+\textbf{可扩展性（Scalability）问题}
+
+\vspace{0.3cm}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{大规模应用案例：}
+\begin{itemize}
+\item AlphaStar（星际争霸II）
+\item OpenAI Five（刀塔2）
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{关键技术：}
+\begin{itemize}
+\item 模仿学习
+\item 种群训练
+\item 自我博弈框架
+\end{itemize}
+
+\column{0.5\textwidth}
+\begin{alertblock}{现实}
+当前算法对大规模任务仍不够高效
+\end{alertblock}
+
+\vspace{0.2cm}
+需要结合其他技术：
+\begin{itemize}
+\item 预训练策略
+\item 监督学习
+\item 多智能体协作
+\end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}{分布式强化学习}
+\textbf{并行训练框架}
+
+\begin{table}
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{算法} & \textbf{特点} \\
+\midrule
+A3C & 异步优势Actor-Critic \\
+DPPO & 分布式近端策略优化 \\
+R2D2 & 循环缓存分布式DQN \\
+IMPALA & 重要性加权行动者-学习者结构 \\
+SEED & 可扩展高效深度强化学习 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.3cm}
+\textbf{QT-Opt案例}~\cite{kalashnikov2018qt}
+\begin{itemize}
+\item 7个机器人并行采样
+\item 在线+离线数据的经验回放缓存
+\item 分布式训练工作者
+\item 关键：平衡不同计算设备（CPU/GPU）
+\end{itemize}
+\end{frame}
+
+% 第十部分：其他挑战
+\section{其他挑战}
+\begin{frame}{其他重要挑战}
+\small
+\textbf{1. 可解释性与可信AI}
+\begin{itemize}
+\item \textbf{黑盒问题}：决策过程不透明
+\item \textbf{注意力可视化}：理解策略关注特征
+\item \textbf{因果推理}：区分相关性与因果性
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{2. 安全强化学习（Safe RL）}
+\begin{itemize}
+\item \textbf{约束满足}：训练中保证安全约束
+\item \textbf{风险敏感决策}：考虑方差和尾部风险
+\item \textbf{保护屏障}：运行时安全监督
+\item \textbf{分布外检测}：识别异常状态
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{3. 理论基础}
+\begin{itemize}
+\item 收敛性、样本复杂度理论保证
+\item 泛化界、探索-利用遗憾界
+\end{itemize}
+\end{frame}
+
+% 第十一部分：Richard Sutton的观点
+\section{总结与展望}
+\begin{frame}{痛苦的教训（The Bitter Lesson）}
+\small
+\begin{block}{Richard Sutton的核心观点（2019）}
+利用\textbf{计算能力}的通用方法最终胜过利用\textbf{人类知识}的专用方法
+\end{block}
+
+\vspace{0.2cm}
+\textbf{两个可无限扩展的方法：}
+\begin{itemize}
+\item 1. \textbf{搜索}：系统性探索可能性空间
+\item 2. \textbf{学习}：从数据中提取模式
+\end{itemize}
+
+\vspace{0.2cm}
+\begin{exampleblock}{历史证据}
+\begin{itemize}
+\item \textbf{国际象棋}：深度搜索击败专家规则（1997）
+\item \textbf{围棋}：MCTS+深度学习（AlphaGo, 2016）
+\item \textbf{计算机视觉}：深度学习超越手工特征（2012+）
+\end{itemize}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{元方法的重要性}
+\begin{alertblock}{第二个教训}
+"构建人类思维方式的内容到AI中在短期有效，但长期会形成障碍。"
+\end{alertblock}
+
+\vspace{0.2cm}
+\textbf{应避免的做法：}
+\begin{itemize}
+\item 硬编码特定领域知识
+\item 预定义的对称性和不变性
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{应追求的方向：}
+\begin{itemize}
+\item \textcolor{seugreen}{\textbf{元学习}}：学习如何学习
+\item \textcolor{seugreen}{\textbf{架构搜索}}：自动设计神经网络
+\end{itemize}
+
+\vspace{0.1cm}
+\begin{exampleblock}{启示}
+投资于可扩展的计算和学习方法
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{本章总结}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{八大核心挑战：}
+\begin{enumerate}
+\item 样本效率
+\item 训练稳定性
+\item 灾难性遗忘
+\item 探索问题
+\item 元学习与表示学习
+\item 多智能体强化学习
+\item 模拟到现实
+\item 大规模强化学习
+\end{enumerate}
+
+\column{0.5\textwidth}
+\textbf{解决思路：}
+\begin{itemize}
+\item 算法改进
+\item 架构创新
+\item 辅助技术
+\item 理论突破
+\end{itemize}
+
+\vspace{0.3cm}
+\begin{block}{未来方向}
+\begin{itemize}
+\item 通用型方法
+\item 元学习机制
+\item 安全可靠
+\item 高效可扩展
+\end{itemize}
+\end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}{挑战与机遇并存}
+\begin{center}
+\begin{tikzpicture}[scale=1.1]
+% 绘制挑战-机遇关系图
+\node[rectangle, draw=seugreen, fill=seuyellow!20, line width=1pt, minimum width=3.5cm, minimum height=1cm, font=\small\bfseries] at (0,3) {样本效率低};
+\node[rectangle, draw=seugreen, fill=seugreen!20, line width=1pt, minimum width=3.5cm, minimum height=1cm, font=\small] at (6.5,3) {元学习、模仿学习};
+
+\node[rectangle, draw=seugreen, fill=seuyellow!20, line width=1pt, minimum width=3.5cm, minimum height=1cm, font=\small\bfseries] at (0,1.5) {训练不稳定};
+\node[rectangle, draw=seugreen, fill=seugreen!20, line width=1pt, minimum width=3.5cm, minimum height=1cm, font=\small] at (6.5,1.5) {目标网络、信赖域};
+
+\node[rectangle, draw=seugreen, fill=seuyellow!20, line width=1pt, minimum width=3.5cm, minimum height=1cm, font=\small\bfseries] at (0,0) {探索困难};
+\node[rectangle, draw=seugreen, fill=seugreen!20, line width=1pt, minimum width=3.5cm, minimum height=1cm, font=\small] at (6.5,0) {内在奖励、分层学习};
+
+\node[rectangle, draw=seugreen, fill=seuyellow!20, line width=1pt, minimum width=3.5cm, minimum height=1cm, font=\small\bfseries] at (0,-1.5) {现实鸿沟};
+\node[rectangle, draw=seugreen, fill=seugreen!20, line width=1pt, minimum width=3.5cm, minimum height=1cm, font=\small] at (6.5,-1.5) {域随机化、自适应};
+
+\draw[->,seugreen,line width=2pt] (1.75,3) -- (4.75,3);
+\draw[->,seugreen,line width=2pt] (1.75,1.5) -- (4.75,1.5);
+\draw[->,seugreen,line width=2pt] (1.75,0) -- (4.75,0);
+\draw[->,seugreen,line width=2pt] (1.75,-1.5) -- (4.75,-1.5);
+
+\node[seugreen,font=\small\bfseries] at (3.25,3.4) {解决方案};
+\node[seugreen,font=\small\bfseries] at (3.25,1.9) {解决方案};
+\node[seugreen,font=\small\bfseries] at (3.25,0.4) {解决方案};
+\node[seugreen,font=\small\bfseries] at (3.25,-1.1) {解决方案};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}{研究展望}
+\begin{block}{短期目标（1-3年）}
+\begin{itemize}
+\item 提高样本效率到实用水平
+\item 增强训练稳定性和可重复性
+\item 改进探索机制
+\item 缩小现实鸿沟
+\end{itemize}
+\end{block}
+
+\vspace{0.3cm}
+\begin{block}{长期愿景（5-10年）}
+\begin{itemize}
+\item 通用强化学习智能体
+\item 真正的终身学习系统
+\item 安全可靠的现实世界部署
+\item 人机协同智能
+\end{itemize}
+\end{block}
+\end{frame}
+
+% 参考文献
+\begin{frame}[allowframebreaks]{参考文献}
+\footnotesize
+\begin{thebibliography}{99}
+\bibitem{deisenroth2011pilco}
+Deisenroth, M., \& Rasmussen, C. E. (2011). PILCO: A model-based and data-efficient approach to policy search. ICML.
+
+\bibitem{henderson2018deep}
+Henderson, P., Islam, R., Bachman, P., et al. (2018). Deep reinforcement learning that matters. AAAI.
+
+\bibitem{kirkpatrick2017overcoming}
+Kirkpatrick, J., Pascanu, R., Rabinowitz, N., et al. (2017). Overcoming catastrophic forgetting in neural networks. PNAS.
+
+\bibitem{vinyals2019grandmaster}
+Vinyals, O., Babuschkin, I., Czarnecki, W. M., et al. (2019). Grandmaster level in StarCraft II using multi-agent reinforcement learning. Nature.
+
+\bibitem{finn2017model}
+Finn, C., Abbeel, P., \& Levine, S. (2017). Model-agnostic meta-learning for fast adaptation of deep networks. ICML.
+
+\bibitem{kalashnikov2018qt}
+Kalashnikov, D., Irpan, A., Pastor, P., et al. (2018). QT-Opt: Scalable deep reinforcement learning for vision-based robotic manipulation. arXiv:1806.10293.
+
+\bibitem{houthooft2016vime}
+Houthooft, R., Chen, X., Duan, Y., et al. (2016). VIME: Variational information maximizing exploration.
+
+\bibitem{andrychowicz2017hindsight}
+Andrychowicz, M., Wolski, F., Ray, A., et al. (2017). Hindsight experience replay. NIPS.
+
+\bibitem{berner2019dota}
+Berner, C., Brockman, G., Chan, B., et al. (2019). Dota 2 with large scale deep reinforcement learning. arXiv:1912.06680.
+
+\bibitem{espeholt2018impala}
+Espeholt, L., Soyer, H., Munos, R., et al. (2018). IMPALA: Scalable distributed deep-RL with importance weighted actor-learner architectures.
+\end{thebibliography}
+\end{frame}
+
+% 附录：算法对比
+\begin{frame}[allowframebreaks]{附录：主要算法对比}
+\begin{table}
+\tiny
+\begin{tabular}{llll}
+\toprule
+\textbf{算法} & \textbf{类型} & \textbf{优势} & \textbf{劣势} \\
+\midrule
+DQN & 离线策略 & 稳定性好 & 仅适用离散动作 \\
+DDPG & 离线策略 & 连续动作 & 训练不稳定 \\
+TD3 & 离线策略 & 改进DDPG稳定性 & 计算开销大 \\
+PPO & 在线策略 & 简单有效 & 样本效率低 \\
+TRPO & 在线策略 & 稳定更新 & 计算复杂 \\
+SAC & 离线策略 & 鲁棒性好 & 超参数敏感 \\
+A3C & 在线策略 & 并行训练 & 收敛慢 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\framebreak
+
+\textbf{选择建议：}
+\begin{itemize}
+\item \textbf{离散动作空间}：DQN系列
+\item \textbf{连续动作空间}：SAC、TD3、PPO
+\item \textbf{需要稳定性}：PPO、TRPO、SAC
+\item \textbf{样本效率优先}：SAC、TD3
+\item \textbf{分布式训练}：A3C、IMPALA、SEED
+\item \textbf{简单易用}：PPO
+\end{itemize}
+\end{frame}
+
+% 附录：实践建议
+\begin{frame}{附录：实践建议}
+\textbf{1. 提高样本效率}
+\begin{itemize}
+\item 使用经验回放（Replay Buffer）
+\item 考虑模仿学习预训练
+\item 尝试基于模型的方法
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{2. 增强训练稳定性}
+\begin{itemize}
+\item 使用多个随机种子
+\item 调整学习率和批大小
+\item 采用目标网络和软更新
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{3. 改进探索}
+\begin{itemize}
+\item 设计好的奖励函数（避免稀疏奖励）
+\item 使用内在奖励机制
+\item 考虑分层强化学习
+\end{itemize}
+\end{frame}
+
+\begin{frame}{附录：调试技巧}
+\textbf{常见问题与解决方案：}
+
+\vspace{0.2cm}
+\textbf{1. 学习曲线不上升}
+\begin{itemize}
+\item 检查奖励函数设计
+\item 降低学习率
+\item 增加探索
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{2. 训练过程崩溃}
+\begin{itemize}
+\item 使用梯度裁剪
+\item 减小更新步长
+\item 检查网络初始化
+\end{itemize}
+
+\vspace{0.2cm}
+\textbf{3. 性能不稳定}
+\begin{itemize}
+\item 增大批大小
+\item 使用目标网络
+\item 调整折扣因子
+\end{itemize}
+\end{frame}
+
+% 致谢与问答
+\begin{frame}[plain,c]
+\begin{center}
+{\Huge\color{seugreen} 感谢观看！}
+
+\vspace{0.8cm}
+\begin{tikzpicture}
+\draw[thick, seugreen, fill=seuyellow!20, line width=2pt] (0,0) circle (2.3cm);
+\node[font=\large\bfseries,seugreen] at (0,0.5) {深度强化学习};
+\node[font=\large\bfseries,seugreen] at (0,-0.5) {Deep RL};
+\draw[seugreen,line width=1.5pt] (-1.3,0) -- (1.3,0);
+\end{tikzpicture}
+
+\vspace{0.4cm}
+\begin{figure}
+\centering
+\includegraphics[width=0.1\linewidth]{pic/seu.pdf}
+\end{figure}
+\end{center}
+\end{frame}
+
+\end{document}
